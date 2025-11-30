@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CPS HELL 10000+ CPS</title>
+  <title>CPS MACRO 10000+ CPS</title>
   <style>
     body,html{margin:0;height:100%;background:#000;color:#0ff;font-family:monospace;overflow:hidden}
     canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.7}
@@ -19,15 +19,15 @@
 
 <canvas id="bg"></canvas>
 <div id="overlay">
-  <h1>CPS HELL MODE</h1>
-  <div class="num">Klik: <span id="clicks">0</span></div>
-  <div class="num">Waktu: <span id="timer">--</span>s</div>
+  <h1>CPS MACRO MODE</h1>
+  <div class="num">click: <span id="clicks">0</span></div>
+  <div class="num">time: <span id="timer">--</span>s</div>
   <div class="num" id="cpsNum">CPS: <span id="cps">0.00</span></div>
-  <button onclick="location.reload()">RESTART HELL</button>
+  <button onclick="location.reload()">RESTART MACRO</button>
 </div>
 
 <script>
-// === SHARED WORKER UNTUK HITUNG KLIK (OFF MAIN THREAD) ===
+// === SHARED WORKER UNTUK HITUNG click (OFF MAIN THREAD) ===
 if (window.SharedWorker) {
   const worker = new SharedWorker(URL.createObjectURL(new Blob([`
     let clicks = 0, startTime = 0;
@@ -46,7 +46,7 @@ if (window.SharedWorker) {
 
   worker.port.start();
 
-  // === KLIK DETECTION (mousedown = auto-clicker 100% kena) ===
+  // === click DETECTION (mousedown = auto-clicker 100% kena) ===
   document.body.addEventListener("mousedown", () => worker.port.postMessage('click'));
   document.body.addEventListener("touchstart", e => { e.preventDefault(); worker.port.postMessage('click'); });
 
@@ -65,7 +65,7 @@ if (window.SharedWorker) {
     document.getElementById("timer").textContent = "0";
   }
 
-  // Klik pertama = mulai test
+  // click pertama = START to test
   document.body.addEventListener("mousedown", () => { if (!running) start(); });
   document.body.addEventListener("touchstart", () => { if (!running) start(); });
 
