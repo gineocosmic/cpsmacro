@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPS HELL 10000+ CPS</title>
+  <style>
+    body,html{margin:0;height:100%;background:#000;color:#0ff;font-family:monospace;overflow:hidden}
+    canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.7}
+    #overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;pointer-events:none}
+    h1{font-size:5vw;text-shadow:0 0 30px #0ff,0 0 60px #0ff}
+    .num{font-size:8vw;font-weight:bold;text-shadow:0 0 40px #0ff}
+    #cpsNum{color:#f00;text-shadow:0 0 50px red,0 0 100px red}
+    button{position:absolute;bottom:30px;padding:20px 50px;font-size:2rem;background:#000;border:3px solid #0ff;color:#0ff;border-radius:20px;cursor:pointer;pointer-events:all}
+    button:hover{background:#0ff;color:#000}
+  </style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<div id="overlay">
+  <h1>CPS HELL MODE</h1>
+  <div class="num">Klik: <span id="clicks">0</span></div>
+  <div class="num">Waktu: <span id="timer">--</span>s</div>
+  <div class="num" id="cpsNum">CPS: <span id="cps">0.00</span></div>
+  <button onclick="location.reload()">RESTART HELL</button>
+</div>
+
+<script>
+// === SHARED WORKER UNTUK HITUNG KLIK (OFF MAIN THREAD) ===
+if (window.SharedWorker) {
+  const worker = new SharedWorker(URL.createObjectURL(new Blob([`
+    let clicks = 0, startTime = 0;
+    self.onconnect = e => {
+      const port = e.ports[0];
+      port.onmessage = msg => {
+        if (msg.data === 'click') clicks++;
+        else if (msg.data === 'start') { clicks = 0; startTime = Date.now(); }
+        else if (msg.data === 'get') {
+          const seconds = startTime ? (Date.now() - startTime) / 1000 : 0;
+          port.postMessage({clicks, seconds: seconds || 0.001});
+        }
+      };
+    };
+  `], {type: 'text/javascript'})));
+
+  worker.port.start();
+
+  // === KLIK DETECTION (mousedown = auto-clicker 100% kena) ===
+  document.body.addEventListener("mousedown", () => worker.port.postMessage('click'));
+  document.body.addEventListener("touchstart", e => { e.preventDefault(); worker.port.postMessage('click'); });
+
+  // === RENDER LOOP (super ringan pake canvas text) ===
+  const canvas = document.getElementById("bg");
+  const ctx = canvas.getContext("2d");
+  canvas.width = innerWidth; canvas.height = innerHeight;
+
+  let running = false;
+  function start() {
+    if (running) return;
+    running = true;
+    worker.port.postMessage('start');
+    document.getElementById("cps").textContent = "0.00";
+    document.getElementById("clicks").textContent = "0";
+    document.getElementById("timer").textContent = "0";
+  }
+
+  // Klik pertama = mulai test
+  document.body.addEventListener("mousedown", () => { if (!running) start(); });
+  document.body.addEventListener("touchstart", () => { if (!running) start(); });
+
+  // Update display tiap 50ms (20 FPS cukup buat mata manusia)
+  setInterval(() => {
+    if (!running) return;
+    worker.port.postMessage('get');
+  }, 50);
+
+  worker.port.onmessage = e => {
+    const {clicks, seconds} = e.data;
+    const cps = (clicks / seconds).toFixed(2);
+
+    document.getElementById("clicks").textContent = clicks.toLocaleString();
+    document.getElementById("timer").textContent = seconds.toFixed(1);
+    document.getElementById("cps").textContent = cps;
+
+    // Efek warna gila
+    const cpsEl = document.getElementById("cpsNum");
+    if (cps > 1000) cpsEl.style.color = "#0f0";
+    if (cps > 3000) cpsEl.style.color = "#ff0";
+    if (cps > 5000) cpsEl.style.color = "#f0f";
+    if (cps > 8000) cpsEl.style.color = "#f00";
+
+    // Canvas background efek matrix rain + glow
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.font = "30px monospace";
+    ctx.fillStyle = "#0ff";
+    for(let i=0;i<15;i++){
+      const x = Math.random()*canvas.width;
+      const y = Math.random()*canvas.height;
+      ctx.fillText("クリック", x, y);
+    }
+  };
+}
+</script>
+</body>
+</html>
